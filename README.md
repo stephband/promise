@@ -19,3 +19,7 @@ A small, functional promises/A+ implementation, written following the spec http:
 ## Reject a promise ##
 
     promise(null, 'Rejection message');
+
+## Note ##
+
+It's a bit experimental. I wrote this in order to better understand the Promises/A+ spec at http://promises-aplus.github.com/promises-spec/. I haven't added full tests yet.
