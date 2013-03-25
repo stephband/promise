@@ -1,0 +1,62 @@
+<html>
+<script src="js/promise.js"></script>
+<script>
+	var promise = Promise();
+
+	function testChaining(promise) {
+		promise
+		.then(function(v) {
+			console.assert(v === 2, 'Fulfill value is not being passed to pass callback');
+			return 10;
+		})
+		.then(function(v) {
+			console.assert(v === 10, 'Returned values are not being sent down the chain.');
+		})
+		.then(function(v) {
+			console.assert(v === undefined, 'Undefined values are not being sent down the chain.')
+		}, function(e) {
+			console.log(e);
+		});
+	}
+
+	function testError(promise) {
+		promise
+		.then(function(v) {
+			throw new Error("Blimey!");
+		})
+		.then(function(v) {
+			console.log('FAIL - this callback should be called precisely never.');
+		})
+		.then(function(v) {
+			console.log('FAIL - this callback should be called precisely never.');
+		}, function(e) {
+			console.assert(e.message === 'Blimey!');
+		});
+	}
+
+	console.log('Test 1 - existence');
+	console.assert(typeof promise === 'function', 'promise not a function. Its a ' + (typeof promise));
+
+	// Try chaining
+	console.log('Test 2 - chaining 1');
+	testChaining(promise)
+
+	// Try a second chain off the same promise
+	console.log('Test 3 - chaining 2');
+	testChaining(promise)
+
+	console.log('Test 4 - errors')
+	testError(promise);
+
+	setTimeout(function() {
+		promise(2);
+	}, 200);
+
+
+	setTimeout(function() {
+		console.log('Test 5 - promise.then() after fulfillment.');
+		testChaining(promise)
+	}, 400);
+
+</script>
+</html>
