@@ -5,7 +5,7 @@
 	function noop() {}
 	
 	function isFunction(fn) {
-		return typeof fn === 'function';
+		return Object.prototype.toString.call(fn) === '[object Function]';
 	}
 
 	function setImmediate(fn) {
@@ -69,17 +69,20 @@
 		var queue = [],
 		    args, fn;
 	
-		function then(pass, fail) {
+		function then1(pass, fail) {
 			var promise = Promise();
 
-			if (fn === fire) {
-				queue.push([pass, fail, promise]);
-			}
-			else {
-				setImmediate(function() {
-					complete.call(args, [pass, fail, promise]);	
-				});
-			}
+			queue.push([pass, fail, promise]);
+
+			return promise;
+		}
+
+		function then2(pass, fail) {
+			var promise = Promise();
+
+			setImmediate(function() {
+				complete.call(args, [pass, fail, promise]);	
+			});
 
 			return promise;
 		}
@@ -87,6 +90,7 @@
 		function fire(value, reason) {
 			fn = noop;
 			args = arguments;
+			promise.then = then2;
 			queue.forEach(complete, arguments);
 		}
 	
@@ -95,7 +99,7 @@
 		}
 	
 		fn = fire;
-		promise.then = then;
+		promise.then = then1;
 	
 		return promise;
 	}
