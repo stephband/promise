@@ -106,12 +106,12 @@
 			// take a node-style callback in a Promise. So this, where the
 			// callback takes the arguments (error, value):
 			//
-			// node.method(arg1, arg2, callback);
+			// node.method(arg1, arg2, ..., callback);
 			//
-			// can be turned into a promise like this:
+			// can be turned into a promise thus:
 			//
-			// Promise(node.method, arg1, arg2);
-		
+			// Promise(node.method, arg1, arg2, ...);
+			
 			// Add the promise as the callback.
 			Array.prototype.push.call(arguments, promise);
 		
