@@ -1,6 +1,6 @@
-(function (module) {
-	if (typeof define === 'function' && define.amd) { define(module); }
-	else { window.Promise = module(); }
+(function(fn) {
+	if (typeof module !== 'undefined') { module.exports = fn(); }
+	else                               { window.Promise = fn(); }
 })(function() {
 	function noop() {}
 	
@@ -9,7 +9,7 @@
 	}
 
 	function setImmediate(fn) {
-		setTimeout(fn, 0);
+		(process && process.nextTick || setTimeout)(fn, 0);
 	}
 	
 	function chain(promise, result) {
@@ -64,8 +64,8 @@
 			promise(value, reason);
 		}
 	}
-	
-	function Promise() {
+
+	function Promise(wrapFn) {
 		var queue = [],
 		    args, fn;
 	
@@ -94,13 +94,31 @@
 			queue.forEach(complete, arguments);
 		}
 	
-		function promise(value, reason) {
+		function promise(reason, value) {
 			fn(value, reason);
 		}
 	
 		fn = fire;
 		promise.then = then1;
 	
+		if (wrapFn) {
+			// Some devious messing about that allows us to wrap functions that
+			// take a node-style callback in a Promise. So this, where the
+			// callback takes the arguments (error, value):
+			//
+			// node.method(arg1, arg2, callback);
+			//
+			// can be turned into a promise like this:
+			//
+			// Promise(node.method, arg1, arg2);
+		
+			// Add the promise as the callback.
+			Array.prototype.push.call(arguments, promise);
+		
+			// Call the wrapFn with arguments 1 and above.
+			wrapFn.call.apply(wrapFn, arguments);
+		}
+
 		return promise;
 	}
 
