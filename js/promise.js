@@ -15,25 +15,26 @@
 	function chain(promise, result) {
 		if (result && isFunction(result.then)) {
 			result.then(function(value) {
-				promise(value);
+				promise(null, value);
 			}, function(reason) {
-				promise(null, reason);
+				promise(reason);
 			});
 	
 			return;
 		}
 	
-		promise(result);
+		promise(null, result);
 	}
 	
 	function trycatch(promise, fn, arg) {
 		var result;
-
+//console.log('trycatch');
 		try {
 			result = fn(arg);
 		}
 		catch (e) {
-			promise(null, e);
+			console.log('CATCH', e);
+			promise(e);
 			return;
 		}
 
@@ -41,8 +42,8 @@
 	}
 
 	function complete(array) {
-		var value = this[0],
-		    reason = this[1],
+		var reason = this[0],
+		    value = this[1],
 		    pass = array[0],
 		    fail = array[1],
 		    promise = array[2],
@@ -56,16 +57,31 @@
 			fn = pass;
 			arg = value;
 		}
-	
+//	console.log('---', fn);
 		if (isFunction(fn)) {
 			trycatch(promise, fn, arg);
 		}
 		else {
-			promise(value, reason);
+			promise(reason, value);
 		}
 	}
 
-	function Promise(wrapFn) {
+	function wrapMethod(obj, method, array, promise) {
+		// Some devious messing about that allows us to wrap functions that
+		// take a node-style callback in a Promise. So this, where the
+		// callback takes the arguments (error, value):
+		//
+		// obj.method(arg1, arg2, ..., callback);
+		//
+		// can be turned into a promise thus:
+		//
+		// Promise(obj, 'method', arg1, arg2, ...);
+
+		array.push(promise);
+		obj[method].apply(obj, array);
+	}
+
+	function Promise(obj, method) {
 		var queue = [],
 		    args, fn;
 	
@@ -87,7 +103,7 @@
 			return promise;
 		}
 	
-		function fire(value, reason) {
+		function fire(reason, value) {
 			fn = noop;
 			args = arguments;
 			promise.then = then2;
@@ -95,28 +111,14 @@
 		}
 	
 		function promise(reason, value) {
-			fn(value, reason);
+			fn(reason, value);
 		}
 	
 		fn = fire;
 		promise.then = then1;
 	
-		if (wrapFn) {
-			// Some devious messing about that allows us to wrap functions that
-			// take a node-style callback in a Promise. So this, where the
-			// callback takes the arguments (error, value):
-			//
-			// node.method(arg1, arg2, ..., callback);
-			//
-			// can be turned into a promise thus:
-			//
-			// Promise(node.method, arg1, arg2, ...);
-			
-			// Add the promise as the callback.
-			Array.prototype.push.call(arguments, promise);
-		
-			// Call the wrapFn with arguments 1 and above.
-			wrapFn.call.apply(wrapFn, arguments);
+		if (method) {
+			wrapMethod(obj, method, Array.prototype.slice.call(arguments, 2), promise);
 		}
 
 		return promise;
